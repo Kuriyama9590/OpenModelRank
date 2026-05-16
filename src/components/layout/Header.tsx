@@ -99,6 +99,9 @@ export function Header() {
             <Link href="/compare" className="text-sm text-[var(--color-muted)] hover:text-[var(--color-foreground)] transition-colors hover:no-underline">
               对比
             </Link>
+            <Link href="/arena" className="text-sm text-[var(--color-muted)] hover:text-[var(--color-foreground)] transition-colors hover:no-underline">
+              竞技场
+            </Link>
             <Link href="/about" className="text-sm text-[var(--color-muted)] hover:text-[var(--color-foreground)] transition-colors hover:no-underline">
               关于
             </Link>
@@ -163,6 +166,13 @@ export function Header() {
               className="text-sm text-[var(--color-muted)] hover:text-[var(--color-foreground)] py-2 transition-colors hover:no-underline"
             >
               对比
+            </Link>
+            <Link
+              href="/arena"
+              onClick={() => setMobileMenuOpen(false)}
+              className="text-sm text-[var(--color-muted)] hover:text-[var(--color-foreground)] py-2 transition-colors hover:no-underline"
+            >
+              竞技场
             </Link>
             <Link
               href="/about"
