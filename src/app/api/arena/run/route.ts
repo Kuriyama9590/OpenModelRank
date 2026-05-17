@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { runBenchmark, type ArenaEvent } from '@/lib/arena/runner';
 
 export async function POST(request: NextRequest) {
-  let body: { apiUrl?: string; modelName?: string; apiKey?: string };
+  let body: { apiUrl?: string; modelName?: string; apiKey?: string; concurrency?: number };
   try {
     body = await request.json();
   } catch {
@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const { apiUrl, modelName, apiKey } = body;
+  const { apiUrl, modelName, apiKey, concurrency } = body;
 
   if (!apiUrl || !modelName || !apiKey) {
     return new Response(
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        for await (const event of runBenchmark({ apiUrl, modelName, apiKey })) {
+        for await (const event of runBenchmark({ apiUrl, modelName, apiKey }, concurrency)) {
           send(event);
         }
       } catch (err) {

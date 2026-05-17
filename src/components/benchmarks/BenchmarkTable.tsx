@@ -152,10 +152,18 @@ export function BenchmarkTable({ benchmarkId }: BenchmarkTableProps) {
                       )}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-center">
-                    <span className="text-sm font-semibold tabular-nums text-[var(--color-foreground)]">
-                      {r.score}
-                    </span>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 score-bar max-w-[80px]">
+                        <div
+                          className="score-bar-fill bg-[var(--color-accent)]"
+                          style={{ width: `${Math.min(100, Math.max(0, r.score))}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-semibold tabular-nums text-[var(--color-foreground)] min-w-[40px] text-right">
+                        {r.score}
+                      </span>
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-center text-sm tabular-nums text-[var(--color-muted)]">
                     {r.date}

@@ -11,6 +11,9 @@ export const models: Record<string, Model> = {
     releaseDate: '2025-12',
     description: 'OpenAI GPT-5系列首个版本，综合推理能力强。',
     contextWindow: 256000,
+    priceBlended: 5.00,
+    speedToks: 60,
+    latencyTTFT: 8.0,
   },
   'gpt-5-5': {
     id: 'gpt-5-5',
@@ -147,6 +150,9 @@ export const models: Record<string, Model> = {
     paramSize: '685B MoE',
     contextWindow: 128000,
     website: 'https://api-docs.deepseek.com/news/news260115',
+    priceBlended: 0.27,
+    speedToks: 70,
+    latencyTTFT: 1.5,
   },
   'gpt-5-2-codex': {
     id: 'gpt-5-2-codex',
@@ -158,6 +164,9 @@ export const models: Record<string, Model> = {
     releaseDate: '2026-02',
     description: 'OpenAI面向编程场景专项优化版本。',
     contextWindow: 256000,
+    priceBlended: 8.00,
+    speedToks: 60,
+    latencyTTFT: 10.0,
   },
   'claude-opus-4-6': {
     id: 'claude-opus-4-6',
@@ -169,6 +178,9 @@ export const models: Record<string, Model> = {
     releaseDate: '2026-02',
     description: 'Anthropic前代旗舰，在SWE-bench和长上下文理解上表现优秀。',
     contextWindow: 200000,
+    priceBlended: 10.94,
+    speedToks: 65,
+    latencyTTFT: 12.0,
   },
   'gemini-3-flash': {
     id: 'gemini-3-flash',
@@ -181,8 +193,8 @@ export const models: Record<string, Model> = {
     description: 'Gemini 3系列轻量版，推理模式下在SWE-bench表现惊艳。',
     contextWindow: 1000000,
     speedToks: 185,
-    priceBlended: 1.13,
-    latencyTTFT: 7.92,
+    priceBlended: 0.50,
+    latencyTTFT: 3.0,
   },
   'gpt-5-2': {
     id: 'gpt-5-2',
@@ -194,6 +206,9 @@ export const models: Record<string, Model> = {
     releaseDate: '2025-12',
     description: 'GPT-5系列迭代版本，综合能力强劲。',
     contextWindow: 256000,
+    priceBlended: 8.00,
+    speedToks: 55,
+    latencyTTFT: 12.0,
   },
   'glm-5-1': {
     id: 'glm-5-1',
@@ -235,6 +250,9 @@ export const models: Record<string, Model> = {
     description: 'MiniMax最新模型，SWE-bench表现突出，支持多模态。',
     contextWindow: 192000,
     website: 'https://www.minimaxi.com/news/minimax-m25',
+    priceBlended: 0.80,
+    speedToks: 50,
+    latencyTTFT: 2.5,
   },
 
   'mimo-v2-5': {
@@ -247,6 +265,9 @@ export const models: Record<string, Model> = {
     releaseDate: '2026-04',
     description: '小米AI最新模型，综合智能指数排名前列。',
     contextWindow: 256000,
+    priceBlended: 1.20,
+    speedToks: 55,
+    latencyTTFT: 3.0,
   },
   'qwen3-235b': {
     id: 'qwen3-235b',
@@ -260,6 +281,9 @@ export const models: Record<string, Model> = {
     paramSize: '235B MoE / 22B active',
     contextWindow: 256000,
     website: 'https://qwenlm.github.io/blog/qwen3/',
+    priceBlended: 0.50,
+    speedToks: 40,
+    latencyTTFT: 3.0,
   },
   'qwen3-coder-480b': {
     id: 'qwen3-coder-480b',
@@ -273,6 +297,9 @@ export const models: Record<string, Model> = {
     paramSize: '480B MoE / 35B active',
     contextWindow: 256000,
     website: 'https://qwenlm.github.io/blog/qwen3-coder/',
+    priceBlended: 0.80,
+    speedToks: 35,
+    latencyTTFT: 4.0,
   },
   'deepseek-r1': {
     id: 'deepseek-r1',
@@ -286,6 +313,9 @@ export const models: Record<string, Model> = {
     paramSize: '685B MoE / 37B active',
     contextWindow: 128000,
     website: 'https://api-docs.deepseek.com/news/news250120',
+    priceBlended: 0.55,
+    speedToks: 25,
+    latencyTTFT: 5.0,
   },
   'claude-sonnet-4-7': {
     id: 'claude-sonnet-4-7',
@@ -297,6 +327,9 @@ export const models: Record<string, Model> = {
     releaseDate: '2026-04',
     description: 'Claude 4.7系列的中端型号，性价比极高的推理模型。',
     contextWindow: 200000,
+    priceBlended: 4.50,
+    speedToks: 90,
+    latencyTTFT: 3.5,
   },
   'gpt-5-5-pro': {
     id: 'gpt-5-5-pro',
@@ -309,6 +342,9 @@ export const models: Record<string, Model> = {
     description: 'GPT-5.5的增强版，更高推理预算，HLE最高分。',
     contextWindow: 256000,
     website: 'https://openai.com/index/introducing-gpt-5-5',
+    priceBlended: 18.00,
+    speedToks: 35,
+    latencyTTFT: 25.0,
   },
   'gpt-oss-120b': {
     id: 'gpt-oss-120b',
@@ -321,6 +357,9 @@ export const models: Record<string, Model> = {
     description: 'OpenAI开源的120B推理模型，开源社区推理能力标杆。',
     paramSize: '120B',
     contextWindow: 256000,
+    priceBlended: 0.20,
+    speedToks: 50,
+    latencyTTFT: 2.5,
   },
   'nemotron-3-super': {
     id: 'nemotron-3-super',
@@ -334,6 +373,9 @@ export const models: Record<string, Model> = {
     paramSize: '120B / 12B active',
     contextWindow: 1000000,
     website: 'https://developer.nvidia.com/blog/introducing-nemotron-3-super',
+    priceBlended: 0.15,
+    speedToks: 80,
+    latencyTTFT: 1.5,
   },
   'llama-4-maverick': {
     id: 'llama-4-maverick',
@@ -346,6 +388,9 @@ export const models: Record<string, Model> = {
     description: 'Meta开源旗舰，SWE-bench达到21%。',
     paramSize: '402B MoE',
     contextWindow: 256000,
+    priceBlended: 0.20,
+    speedToks: 65,
+    latencyTTFT: 2.0,
   },
   'mistral-medium-3-5': {
     id: 'mistral-medium-3-5',
@@ -357,6 +402,9 @@ export const models: Record<string, Model> = {
     releaseDate: '2026-04',
     description: 'Mistral最新中等尺寸模型，效率与能力平衡。',
     contextWindow: 256000,
+    priceBlended: 1.50,
+    speedToks: 70,
+    latencyTTFT: 3.5,
   },
   'gpt-5-4': {
     id: 'gpt-5-4',
@@ -368,6 +416,9 @@ export const models: Record<string, Model> = {
     releaseDate: '2026-03',
     description: 'GPT-5.5的前代版本，为OpenAI后续突破奠定基础。',
     contextWindow: 256000,
+    priceBlended: 10.00,
+    speedToks: 48,
+    latencyTTFT: 15.0,
   },
   'qwen3-6-plus': {
     id: 'qwen3-6-plus',
@@ -435,6 +486,9 @@ export const models: Record<string, Model> = {
     releaseDate: '2026-03',
     description: '百度文心最新推理模型。',
     contextWindow: 128000,
+    priceBlended: 0.80,
+    speedToks: 60,
+    latencyTTFT: 3.0,
   },
   'doubao-seed-code': {
     id: 'doubao-seed-code',
@@ -446,6 +500,9 @@ export const models: Record<string, Model> = {
     releaseDate: '2026-03',
     description: '字节豆包编程专用模型。',
     contextWindow: 256000,
+    priceBlended: 0.50,
+    speedToks: 80,
+    latencyTTFT: 2.0,
   },
   'step-3-5-flash': {
     id: 'step-3-5-flash',
@@ -471,6 +528,9 @@ export const models: Record<string, Model> = {
     releaseDate: '2026-03',
     description: '智谱轻量高速模型。',
     contextWindow: 200000,
+    priceBlended: 0.60,
+    speedToks: 120,
+    latencyTTFT: 1.5,
   },
   'claude-sonnet-4-6': {
     id: 'claude-sonnet-4-6',
@@ -482,6 +542,9 @@ export const models: Record<string, Model> = {
     releaseDate: '2026-02',
     description: 'Anthropic中端推理模型，Claude 4.6系列性价比款。',
     contextWindow: 200000,
+    priceBlended: 4.50,
+    speedToks: 85,
+    latencyTTFT: 4.0,
   },
   'gpt-5-3-codex': {
     id: 'gpt-5-3-codex',
@@ -493,6 +556,9 @@ export const models: Record<string, Model> = {
     releaseDate: '2026-02',
     description: 'OpenAI GPT-5.3系列编程优化版。',
     contextWindow: 400000,
+    priceBlended: 10.00,
+    speedToks: 55,
+    latencyTTFT: 12.0,
   },
 };
 

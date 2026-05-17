@@ -1,6 +1,6 @@
 import { parseSSEResponse } from './sse-parser';
 
-const MODEL_TIMEOUT_MS = 60_000;
+const MODEL_TIMEOUT_MS = 360_000;
 
 export interface ModelCallResult {
   response: string;
@@ -44,7 +44,7 @@ export async function* callModelStreaming(
       body: JSON.stringify({
         model: modelName,
         messages: [{ role: 'user', content: prompt }],
-        max_tokens: 2048,
+        max_tokens: 131072,
         temperature: 0.3,
         stream: true,
       }),

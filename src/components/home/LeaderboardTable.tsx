@@ -47,7 +47,30 @@ function ScoreDisplay({ score, unit }: { score: number; unit: string }) {
       : score >= 50
         ? 'text-[var(--color-foreground)]'
         : 'text-[var(--color-muted)]';
-  return <span className={cn('tabular-nums font-medium', colorClass)}>{formatted}</span>;
+
+  const barPct = Math.min(100, Math.max(0, score));
+  const barColor =
+    score >= 80
+      ? 'bg-[var(--color-success)]'
+      : score >= 50
+        ? 'bg-[var(--color-accent)]'
+        : 'bg-[var(--color-muted)]';
+
+  return (
+    <div className="flex items-center gap-3 min-w-[120px]">
+      <div className="flex-1 score-bar">
+        <div className={cn('score-bar-fill', barColor)} style={{ width: `${barPct}%` }} />
+      </div>
+      <span className={cn('tabular-nums font-medium text-sm w-14 text-right', colorClass)}>{formatted}</span>
+    </div>
+  );
+}
+
+function RankBadge({ rank }: { rank: number }) {
+  if (rank <= 3) {
+    return <span className={cn('rank-badge', `rank-${rank}`)}>{rank}</span>;
+  }
+  return <span className={cn('rank-badge rank-default')}>{rank}</span>;
 }
 
 function BenchmarkSection({ ranking }: { ranking: BenchmarkRanking }) {
@@ -93,15 +116,14 @@ function BenchmarkSection({ ranking }: { ranking: BenchmarkRanking }) {
         {displayed.map((entry, idx) => {
           const model = getModel(entry.modelId);
           if (!model) return null;
+          const rank = sortDir === 'desc' ? idx + 1 : sorted.length - idx;
           return (
             <div
               key={entry.modelId}
               className="flex items-center px-4 py-2.5 hover:bg-[var(--color-surface-hover)] transition-colors"
             >
-              <span className="w-8 text-sm tabular-nums text-[var(--color-muted)]">
-                {idx + 1}
-              </span>
-              <div className="flex items-center gap-2 min-w-0 flex-1">
+              <RankBadge rank={rank} />
+              <div className="flex items-center gap-2 min-w-0 flex-1 ml-3">
                 <Link
                   href={`/models/${model.id}`}
                   className="text-sm font-medium text-[var(--color-foreground)] hover:text-[var(--color-accent)] truncate transition-colors hover:no-underline"

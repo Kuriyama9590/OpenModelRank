@@ -19,6 +19,7 @@ export default function ArenaPage() {
   const [finalData, setFinalData] = useState<ArenaDoneEvent | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [savedReportId, setSavedReportId] = useState<string | null>(null);
+  const [lastConfig, setLastConfig] = useState<{ apiUrl: string; modelName: string; apiKey: string; concurrency: number } | null>(null);
 
   // Batching: per-question pending deltas keyed by questionId
   const pending = useRef<Map<string, { model: string; reasoning: string; content: string }>>(new Map());
@@ -66,7 +67,7 @@ export default function ArenaPage() {
     setStreams((prev) => prev.filter((s) => s.questionId !== questionId));
   }
 
-  async function handleStart(config: { apiUrl: string; modelName: string; apiKey: string }) {
+  async function handleStart(config: { apiUrl: string; modelName: string; apiKey: string; concurrency: number }) {
     setPhase('running');
     setCompleted(0);
     setCompletedResults([]);
@@ -75,6 +76,7 @@ export default function ArenaPage() {
     setSavedReportId(null);
     setStreams([]);
     pending.current.clear();
+    setLastConfig(config);
 
     try {
       const res = await fetch('/api/arena/run', {
@@ -147,7 +149,7 @@ export default function ArenaPage() {
                 const saveRes = await fetch('/api/arena/reports', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify(event),
+                  body: JSON.stringify({ ...event, apiUrl: lastConfig?.apiUrl || '' }),
                 });
                 if (saveRes.ok) {
                   const saved = await saveRes.json();
@@ -186,6 +188,11 @@ export default function ArenaPage() {
     pending.current.clear();
   }
 
+  function handleRetest() {
+    if (!lastConfig) return;
+    handleStart(lastConfig);
+  }
+
   return (
     <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
@@ -220,7 +227,7 @@ export default function ArenaPage() {
 
       {phase === 'form' && (
         <div className="p-6 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
-          <ArenaForm onSubmit={handleStart} isRunning={false} />
+          <ArenaForm onSubmit={handleStart} isRunning={false} initialConfig={lastConfig ?? undefined} />
         </div>
       )}
 
@@ -236,7 +243,7 @@ export default function ArenaPage() {
       )}
 
       {phase === 'results' && finalData && (
-        <ArenaResults data={finalData} onReset={handleReset} />
+        <ArenaResults data={finalData} onReset={handleReset} onRetest={handleRetest} />
       )}
     </div>
   );

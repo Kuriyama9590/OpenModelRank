@@ -5,16 +5,20 @@ import { Loader2, Zap, Plug, CheckCircle2, XCircle } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
 interface ArenaFormProps {
-  onSubmit: (config: { apiUrl: string; modelName: string; apiKey: string }) => void;
+  onSubmit: (config: { apiUrl: string; modelName: string; apiKey: string; concurrency: number }) => void;
   isRunning: boolean;
+  initialConfig?: { apiUrl: string; modelName: string; apiKey: string; concurrency: number };
 }
 
 type TestStatus = 'idle' | 'testing' | 'success' | 'error';
 
-export function ArenaForm({ onSubmit, isRunning }: ArenaFormProps) {
-  const [apiUrl, setApiUrl] = useState('');
-  const [modelName, setModelName] = useState('');
-  const [apiKey, setApiKey] = useState('');
+const CONCURRENCY_OPTIONS = [1, 2, 4, 8] as const;
+
+export function ArenaForm({ onSubmit, isRunning, initialConfig }: ArenaFormProps) {
+  const [apiUrl, setApiUrl] = useState(initialConfig?.apiUrl ?? '');
+  const [modelName, setModelName] = useState(initialConfig?.modelName ?? '');
+  const [apiKey, setApiKey] = useState(initialConfig?.apiKey ?? '');
+  const [concurrency, setConcurrency] = useState(initialConfig?.concurrency ?? 8);
   const [testStatus, setTestStatus] = useState<TestStatus>('idle');
   const [testMessage, setTestMessage] = useState('');
 
@@ -73,7 +77,7 @@ export function ArenaForm({ onSubmit, isRunning }: ArenaFormProps) {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
-    onSubmit({ apiUrl: apiUrl.trim(), modelName: modelName.trim(), apiKey: apiKey.trim() });
+    onSubmit({ apiUrl: apiUrl.trim(), modelName: modelName.trim(), apiKey: apiKey.trim(), concurrency });
   }
 
   return (
@@ -132,6 +136,33 @@ export function ArenaForm({ onSubmit, isRunning }: ArenaFormProps) {
         />
         <p className="text-xs text-[var(--color-muted)]">
           API Key 仅用于本次评测，不会被存储。支持所有兼容 OpenAI 格式的 API。
+        </p>
+      </div>
+
+      {/* Concurrency */}
+      <div className="space-y-2">
+        <label className="text-sm text-[var(--color-muted)]">并发数</label>
+        <div className="flex gap-2">
+          {CONCURRENCY_OPTIONS.map((n) => (
+            <button
+              key={n}
+              type="button"
+              onClick={() => setConcurrency(n)}
+              disabled={isRunning}
+              className={cn(
+                'px-4 py-2 rounded-lg text-sm font-medium transition-colors border',
+                concurrency === n
+                  ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
+                  : 'border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-foreground)] hover:border-[var(--color-accent)]',
+                'disabled:opacity-50 disabled:cursor-not-allowed'
+              )}
+            >
+              {n === 1 ? '单轮' : `${n}并发`}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-[var(--color-muted)]">
+          低并发可避免大型模型长输出被截断，高并发可加快评测速度。
         </p>
       </div>
 

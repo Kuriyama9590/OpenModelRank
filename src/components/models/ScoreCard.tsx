@@ -24,15 +24,26 @@ export function ScoreCard({ benchmarkId, score }: ScoreCardProps) {
         : 'text-[var(--color-muted)]'
     : '';
 
+  const barColor = hasScore
+    ? score.score >= 80
+      ? 'bg-[var(--color-success)]'
+      : score.score >= 50
+        ? 'bg-[var(--color-warning)]'
+        : 'bg-[var(--color-muted)]'
+    : '';
+
+  const barPct = hasScore ? Math.min(100, Math.max(0, score.score)) : 0;
+
   return (
     <Link
       href={`/benchmarks/${benchmarkId}`}
       className={cn(
         'block rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4',
-        'hover:border-[var(--color-accent)]/40 hover:bg-[var(--color-surface-hover)] transition-colors hover:no-underline'
+        'hover:border-[var(--color-accent)]/40 hover:bg-[var(--color-surface-hover)] transition-all hover:no-underline',
+        'gradient-card'
       )}
     >
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2">
           <span className="text-sm font-medium text-[var(--color-foreground)] truncate">
             {bm.name}
@@ -54,6 +65,12 @@ export function ScoreCard({ benchmarkId, score }: ScoreCardProps) {
             <span className="text-2xl font-bold text-[var(--color-muted)]">--</span>
           )}
         </div>
+
+        {hasScore && (
+          <div className="score-bar">
+            <div className={cn('score-bar-fill', barColor)} style={{ width: `${barPct}%` }} />
+          </div>
+        )}
 
         <div className="flex items-center justify-between">
           {hasScore ? (

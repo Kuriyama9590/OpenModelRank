@@ -27,6 +27,7 @@ function migrate(db: Database.Database) {
     CREATE TABLE IF NOT EXISTS arena_reports (
       id TEXT PRIMARY KEY,
       model_name TEXT NOT NULL,
+      api_url TEXT NOT NULL DEFAULT '',
       overall_score INTEGER NOT NULL,
       overall_max_score INTEGER NOT NULL,
       percentage REAL NOT NULL,
@@ -34,7 +35,16 @@ function migrate(db: Database.Database) {
       results TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+  `);
 
+  // Add api_url column for existing databases
+  try {
+    db.exec("ALTER TABLE arena_reports ADD COLUMN api_url TEXT NOT NULL DEFAULT ''");
+  } catch {
+    // Column already exists — ignore
+  }
+
+  db.exec(`
     CREATE INDEX IF NOT EXISTS idx_arena_reports_created_at
       ON arena_reports(created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_arena_reports_model_name

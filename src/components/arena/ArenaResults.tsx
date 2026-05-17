@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   RadarChart,
   PolarGrid,
@@ -14,17 +14,27 @@ import {
   Tooltip,
   Cell,
 } from 'recharts';
-import { ChevronDown, ChevronUp, Clock, RotateCcw } from 'lucide-react';
+import { ChevronDown, ChevronUp, Clock, RotateCcw, RefreshCw, Redo } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { ARENA_CATEGORY_COLORS, type ArenaCategory } from '@/data/arena-questions';
 import type { ArenaDoneEvent, QuestionResult } from '@/lib/arena/runner';
 
+export interface RetestStreamState {
+  modelText: string;
+  scorerReasoning: string;
+  scorerContent: string;
+}
+
 interface ArenaResultsProps {
   data: ArenaDoneEvent;
   onReset: () => void;
+  onRetest?: () => void;
+  onRetestQuestion?: (result: QuestionResult) => void;
+  retestingQuestionId?: string | null;
+  retestStream?: RetestStreamState | null;
 }
 
-export function ArenaResults({ data, onReset }: ArenaResultsProps) {
+export function ArenaResults({ data, onReset, onRetest, onRetestQuestion, retestingQuestionId, retestStream }: ArenaResultsProps) {
   const { percentage, categoryScores, results, modelName, overallScore, overallMaxScore } = data;
 
   const radarData = categoryScores.map((c) => ({
@@ -65,13 +75,24 @@ export function ArenaResults({ data, onReset }: ArenaResultsProps) {
             总分 {overallScore} / {overallMaxScore}（{percentage}%）
           </p>
         </div>
-        <button
-          onClick={onReset}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-muted)] hover:text-[var(--color-foreground)] hover:border-[var(--color-accent)] transition-colors"
-        >
-          <RotateCcw className="h-4 w-4" />
-          重新评测
-        </button>
+        <div className="flex gap-2">
+          {onRetest && (
+            <button
+              onClick={onRetest}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--color-accent)] text-sm text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 transition-colors"
+            >
+              <RefreshCw className="h-4 w-4" />
+              重测
+            </button>
+          )}
+          <button
+            onClick={onReset}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-muted)] hover:text-[var(--color-foreground)] hover:border-[var(--color-accent)] transition-colors"
+          >
+            <RotateCcw className="h-4 w-4" />
+            重新评测
+          </button>
+        </div>
       </div>
 
       {/* Charts row */}
@@ -148,7 +169,13 @@ export function ArenaResults({ data, onReset }: ArenaResultsProps) {
         <h3 className="text-sm font-medium text-[var(--color-foreground)]">详细结果</h3>
         <div className="space-y-2">
           {results.map((r) => (
-            <QuestionResultCard key={r.questionId} result={r} />
+            <QuestionResultCard
+              key={r.questionId}
+              result={r}
+              onRetest={onRetestQuestion}
+              isRetesting={retestingQuestionId === r.questionId}
+              retestStream={retestingQuestionId === r.questionId ? (retestStream ?? undefined) : undefined}
+            />
           ))}
         </div>
       </div>
@@ -156,33 +183,84 @@ export function ArenaResults({ data, onReset }: ArenaResultsProps) {
   );
 }
 
-function QuestionResultCard({ result }: { result: QuestionResult }) {
+function QuestionResultCard({
+  result,
+  onRetest,
+  isRetesting,
+  retestStream,
+}: {
+  result: QuestionResult;
+  onRetest?: (result: QuestionResult) => void;
+  isRetesting?: boolean;
+  retestStream?: RetestStreamState;
+}) {
   const [expanded, setExpanded] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const pct = Math.round((result.score / result.maxScore) * 100);
 
   const scoreColor =
     pct >= 80 ? 'text-green-400' :
     pct >= 50 ? 'text-yellow-400' : 'text-red-400';
 
+  // Auto-scroll streaming content
+  useEffect(() => {
+    if (isRetesting && scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [retestStream?.modelText, retestStream?.scorerReasoning, retestStream?.scorerContent, isRetesting]);
+
+  // Auto-expand when retesting starts
+  useEffect(() => {
+    if (isRetesting) setExpanded(true);
+  }, [isRetesting]);
+
+  const showStream = isRetesting && retestStream;
+  const modelText = showStream ? retestStream.modelText : result.modelResponse;
+  const scorerText = showStream
+    ? (retestStream.scorerReasoning || retestStream.scorerContent
+      ? (retestStream.scorerReasoning ? retestStream.scorerReasoning + '\n' : '') + retestStream.scorerContent
+      : '等待评分...')
+    : result.reason;
+
   return (
-    <div className="rounded-lg bg-[var(--color-background)] border border-[var(--color-border)] overflow-hidden">
-      <button
+    <div className={cn(
+      'rounded-lg bg-[var(--color-background)] border overflow-hidden',
+      isRetesting ? 'border-[var(--color-accent)]' : 'border-[var(--color-border)]',
+    )}>
+      <div
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[var(--color-surface-hover)] transition-colors text-left"
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpanded(!expanded); } }}
+        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[var(--color-surface-hover)] transition-colors text-left cursor-pointer select-none"
       >
         <span
           className="h-2 w-2 rounded-full shrink-0"
-          style={{ backgroundColor: ARENA_CATEGORY_COLORS[result.category] }}
-        />
+          style={{ backgroundColor: isRetesting ? 'var(--color-accent)' : ARENA_CATEGORY_COLORS[result.category] }}
+        >
+          {isRetesting && (
+            <span className="block h-2 w-2 rounded-full bg-[var(--color-accent)] animate-ping" />
+          )}
+        </span>
         <span className="text-sm text-[var(--color-foreground)] flex-1 truncate">
           {result.questionId}
+          {isRetesting && <span className="text-xs text-[var(--color-accent)] ml-1">重测中...</span>}
         </span>
         <div className="flex items-center gap-3 shrink-0">
-          {result.latencyMs > 0 && (
+          {result.latencyMs > 0 && !isRetesting && (
             <span className="flex items-center gap-1 text-xs text-[var(--color-muted)]">
               <Clock className="h-3 w-3" />
               {(result.latencyMs / 1000).toFixed(1)}s
             </span>
+          )}
+          {onRetest && !isRetesting && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onRetest(result); }}
+              className="flex items-center gap-1 px-2 py-1 rounded text-xs text-[var(--color-muted)] hover:text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 transition-colors"
+              title="重测此题"
+            >
+              <Redo className="h-3 w-3" />
+            </button>
           )}
           <span className={cn('text-sm font-mono font-medium', scoreColor)}>
             {result.score}/{result.maxScore}
@@ -193,7 +271,7 @@ function QuestionResultCard({ result }: { result: QuestionResult }) {
             <ChevronDown className="h-4 w-4 text-[var(--color-muted)]" />
           )}
         </div>
-      </button>
+      </div>
       {expanded && (
         <div className="px-4 pb-4 space-y-3 border-t border-[var(--color-border)]">
           <div>
@@ -201,14 +279,25 @@ function QuestionResultCard({ result }: { result: QuestionResult }) {
             <div className="text-sm text-[var(--color-foreground)] whitespace-pre-wrap">{result.question}</div>
           </div>
           <div>
-            <div className="text-xs text-[var(--color-muted)] mb-1">模型回答</div>
-            <div className="text-sm text-[var(--color-foreground)] whitespace-pre-wrap max-h-60 overflow-y-auto">
-              {result.modelResponse}
+            <div className="text-xs text-[var(--color-muted)] mb-1">
+              {isRetesting ? '模型回答（实时）' : '模型回答'}
+            </div>
+            <div
+              ref={scrollRef}
+              className="text-sm text-[var(--color-foreground)] whitespace-pre-wrap max-h-60 overflow-y-auto font-mono text-xs leading-relaxed"
+            >
+              {modelText}
+              {isRetesting && <span className="inline-block w-1.5 h-3.5 bg-[var(--color-accent)] animate-pulse ml-0.5 align-middle" />}
             </div>
           </div>
           <div>
-            <div className="text-xs text-[var(--color-muted)] mb-1">评分理由</div>
-            <div className="text-sm text-[var(--color-foreground)]">{result.reason}</div>
+            <div className="text-xs text-[var(--color-muted)] mb-1">
+              {isRetesting ? '评分过程（实时）' : '评分理由'}
+            </div>
+            <div className="text-sm text-[var(--color-foreground)] whitespace-pre-wrap max-h-40 overflow-y-auto font-mono text-xs leading-relaxed">
+              {scorerText}
+              {isRetesting && <span className="inline-block w-1.5 h-3.5 bg-[var(--color-accent)] animate-pulse ml-0.5 align-middle" />}
+            </div>
           </div>
         </div>
       )}

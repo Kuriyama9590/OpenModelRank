@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Swords, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
-import { ArenaResults } from '@/components/arena/ArenaResults';
-import type { ArenaDoneEvent } from '@/lib/arena/runner';
+import { Swords, ChevronLeft, ChevronRight, Clock, Redo, X } from 'lucide-react';
+import { ArenaResults, type RetestStreamState } from '@/components/arena/ArenaResults';
+import { cn } from '@/lib/cn';
+import { arenaQuestions } from '@/data/arena-questions';
+import type { ArenaDoneEvent, QuestionResult } from '@/lib/arena/runner';
 
 interface ReportSummary {
   id: string;
@@ -16,6 +18,7 @@ interface ReportSummary {
 }
 
 interface ReportDetail extends ReportSummary {
+  apiUrl: string;
   categoryScores: ArenaDoneEvent['categoryScores'];
   results: ArenaDoneEvent['results'];
 }
@@ -35,6 +38,15 @@ export default function ArenaHistoryPage() {
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [expandedData, setExpandedData] = useState<ReportDetail | null>(null);
+
+  // Single question retest state
+  const [retestingQuestionId, setRetestingQuestionId] = useState<string | null>(null);
+  const [retestFormVisible, setRetestFormVisible] = useState(false);
+  const [retestApiUrl, setRetestApiUrl] = useState('');
+  const [retestModelName, setRetestModelName] = useState('');
+  const [retestApiKey, setRetestApiKey] = useState('');
+  const [retestPendingResult, setRetestPendingResult] = useState<QuestionResult | null>(null);
+  const [retestStream, setRetestStream] = useState<RetestStreamState | null>(null);
 
   const limit = 10;
 
@@ -74,6 +86,172 @@ export default function ArenaHistoryPage() {
     }
   }
 
+  function handleRetestQuestion(result: QuestionResult) {
+    setRetestPendingResult(result);
+    // Pre-fill apiUrl/modelName from expandedData; apiKey from sessionStorage
+    if (expandedData) {
+      setRetestApiUrl(expandedData.apiUrl || '');
+      setRetestModelName(expandedData.modelName);
+    }
+    const savedKey = sessionStorage.getItem('arena_retest_apikey');
+    if (savedKey) setRetestApiKey(savedKey);
+    setRetestFormVisible(true);
+  }
+
+  function cancelRetest() {
+    setRetestFormVisible(false);
+    setRetestPendingResult(null);
+    setRetestingQuestionId(null);
+    setRetestApiUrl('');
+    setRetestModelName('');
+    setRetestApiKey('');
+  }
+
+  async function handleRetestSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!retestApiUrl.trim() || !retestModelName.trim() || !retestApiKey.trim() || !retestPendingResult) return;
+
+    // Save apiKey to sessionStorage for future retests
+    sessionStorage.setItem('arena_retest_apikey', retestApiKey.trim());
+
+    // Look up full question data (scoringRubric + referenceAnswer) from arena questions
+    const fullQ = arenaQuestions.find((q) => q.id === retestPendingResult.questionId);
+    const question = {
+      id: retestPendingResult.questionId,
+      category: retestPendingResult.category,
+      question: retestPendingResult.question,
+      scoringRubric: fullQ?.scoringRubric || '',
+      maxScore: retestPendingResult.maxScore,
+      referenceAnswer: fullQ?.referenceAnswer || '',
+    };
+
+    setRetestingQuestionId(retestPendingResult.questionId);
+    setRetestFormVisible(false);
+    setRetestStream({ modelText: '', scorerReasoning: '', scorerContent: '' });
+
+    try {
+      const res = await fetch('/api/arena/retest-question', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apiUrl: retestApiUrl.trim(),
+          modelName: retestModelName.trim(),
+          apiKey: retestApiKey.trim(),
+          question,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+        throw new Error(data.error || `请求失败: ${res.status}`);
+      }
+
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error('无法读取响应流');
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const json = line.slice(6);
+            if (!json.trim()) continue;
+
+            try {
+              const event = JSON.parse(json);
+
+              if (event.type === 'model_chunk') {
+                setRetestStream((prev) => prev ? { ...prev, modelText: prev.modelText + (event.delta || '') } : prev);
+              } else if (event.type === 'scorer_chunk') {
+                setRetestStream((prev) => {
+                  if (!prev) return prev;
+                  if (event.source === 'reasoning') {
+                    return { ...prev, scorerReasoning: prev.scorerReasoning + (event.delta || '') };
+                  }
+                  return { ...prev, scorerContent: prev.scorerContent + (event.delta || '') };
+                });
+              } else if (event.type === 'result') {
+                const newResult = event.result as QuestionResult;
+                setExpandedData((prev) => {
+                  if (!prev) return prev;
+                  const updatedResults = prev.results.map((r) =>
+                    r.questionId === newResult.questionId ? newResult : r,
+                  );
+
+                  // Recalculate totals
+                  let totalScore = 0;
+                  let totalMax = 0;
+                  const categoryMap = new Map<string, { score: number; max: number }>();
+                  for (const r of updatedResults) {
+                    const entry = categoryMap.get(r.category) || { score: 0, max: 0 };
+                    entry.score += r.score;
+                    entry.max += r.maxScore;
+                    categoryMap.set(r.category, entry);
+                    totalScore += r.score;
+                    totalMax += r.maxScore;
+                  }
+                  const updatedCategoryScores = Array.from(categoryMap, ([category, { score, max }]) => ({
+                    category: category as ArenaDoneEvent['categoryScores'][number]['category'],
+                    name: category,
+                    score,
+                    maxScore: max,
+                    percentage: Math.round((score / max) * 1000) / 10,
+                  })).sort((a, b) => b.percentage - a.percentage);
+
+                  // Persist to DB (fire-and-forget)
+                  if (expandedId) {
+                    fetch(`/api/arena/reports/${expandedId}`, {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ results: updatedResults }),
+                    }).catch(() => {});
+                  }
+
+                  return {
+                    ...prev,
+                    results: updatedResults,
+                    overallScore: totalScore,
+                    overallMaxScore: totalMax,
+                    percentage: Math.round((totalScore / totalMax) * 1000) / 10,
+                    categoryScores: updatedCategoryScores,
+                  };
+                });
+              } else if (event.type === 'error') {
+                // Non-fatal — keep whatever was streamed so far
+              }
+            } catch (parseErr) {
+              if (!(parseErr instanceof SyntaxError)) throw parseErr;
+            }
+          }
+        }
+      } catch {
+        // Reader aborted — connection closed by server timeout
+      }
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        // Connection lost (server timeout or network issue) — keep partial result
+      } else {
+        console.error('Retest failed:', err);
+      }
+    } finally {
+      setRetestingQuestionId(null);
+      setRetestStream(null);
+      setRetestPendingResult(null);
+      setRetestApiUrl('');
+      setRetestModelName('');
+      setRetestApiKey('');
+    }
+  }
+
   const totalPages = Math.ceil(total / limit);
 
   return (
@@ -94,6 +272,70 @@ export default function ArenaHistoryPage() {
           查看所有已保存的评测报告
         </p>
       </div>
+
+      {/* Retest form */}
+      {retestFormVisible && retestPendingResult && (
+        <div className="mb-6 p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-accent)]">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-[var(--color-foreground)]">
+              重测 — {retestPendingResult.questionId}
+            </h3>
+            <button onClick={cancelRetest} className="text-[var(--color-muted)] hover:text-[var(--color-foreground)]">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <form onSubmit={handleRetestSubmit} className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <input
+                type="text"
+                placeholder="API 地址"
+                value={retestApiUrl}
+                onChange={(e) => setRetestApiUrl(e.target.value)}
+                className={cn(
+                  'rounded-lg bg-[var(--color-background)] border border-[var(--color-border)] py-2 px-3 text-sm',
+                  'placeholder:text-[var(--color-muted)] text-[var(--color-foreground)]',
+                  'focus:outline-none focus:border-[var(--color-accent)]',
+                )}
+              />
+              <input
+                type="text"
+                placeholder="模型名称"
+                value={retestModelName}
+                onChange={(e) => setRetestModelName(e.target.value)}
+                className={cn(
+                  'rounded-lg bg-[var(--color-background)] border border-[var(--color-border)] py-2 px-3 text-sm',
+                  'placeholder:text-[var(--color-muted)] text-[var(--color-foreground)]',
+                  'focus:outline-none focus:border-[var(--color-accent)]',
+                )}
+              />
+              <input
+                type="password"
+                placeholder="API Key"
+                value={retestApiKey}
+                onChange={(e) => setRetestApiKey(e.target.value)}
+                className={cn(
+                  'rounded-lg bg-[var(--color-background)] border border-[var(--color-border)] py-2 px-3 text-sm',
+                  'placeholder:text-[var(--color-muted)] text-[var(--color-foreground)]',
+                  'focus:outline-none focus:border-[var(--color-accent)]',
+                )}
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={!retestApiUrl.trim() || !retestModelName.trim() || !retestApiKey.trim()}
+              className={cn(
+                'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium',
+                retestApiUrl.trim() && retestModelName.trim() && retestApiKey.trim()
+                  ? 'bg-[var(--color-accent)] text-white hover:opacity-90'
+                  : 'bg-[var(--color-border)] text-[var(--color-muted)] cursor-not-allowed',
+              )}
+            >
+              <Redo className="h-4 w-4" />
+              开始重测
+            </button>
+          </form>
+        </div>
+      )}
 
       {/* Loading */}
       {loading && (
@@ -159,6 +401,9 @@ export default function ArenaHistoryPage() {
                           modelName: expandedData.modelName,
                         }}
                         onReset={() => { setExpandedId(null); setExpandedData(null); }}
+                        onRetestQuestion={handleRetestQuestion}
+                        retestingQuestionId={retestingQuestionId}
+                        retestStream={retestStream}
                       />
                     ) : (
                       <div className="text-center py-6 text-[var(--color-muted)]">加载报告详情...</div>

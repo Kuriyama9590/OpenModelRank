@@ -18,12 +18,15 @@ export async function POST(request: NextRequest) {
   const id = randomUUID();
   const db = getDb();
 
+  const apiUrl = (body as unknown as Record<string, unknown>).apiUrl as string || '';
+
   db.prepare(`
-    INSERT INTO arena_reports (id, model_name, overall_score, overall_max_score, percentage, category_scores, results)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO arena_reports (id, model_name, api_url, overall_score, overall_max_score, percentage, category_scores, results)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id,
     body.modelName,
+    apiUrl,
     body.overallScore,
     body.overallMaxScore,
     body.percentage,

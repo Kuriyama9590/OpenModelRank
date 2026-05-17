@@ -19,7 +19,7 @@ export function ModelHeader({ modelId }: ModelHeaderProps) {
   }
 
   return (
-    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 sm:p-8">
+    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 sm:p-8 gradient-card">
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-2xl sm:text-3xl font-bold text-[var(--color-foreground)] tracking-tight">
@@ -80,7 +80,7 @@ export function ModelHeader({ modelId }: ModelHeaderProps) {
         )}
 
         {(model.speedToks || model.priceBlended || model.latencyTTFT) && (
-          <div className="flex flex-wrap gap-4 pt-2 border-t border-[var(--color-border)]">
+          <div className="flex flex-wrap gap-4 pt-3 border-t border-[var(--color-border)]">
             {model.speedToks && (
               <div className="flex items-center gap-1.5">
                 <span className="text-xs text-[var(--color-muted)]">速度</span>

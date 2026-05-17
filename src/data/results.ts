@@ -343,6 +343,21 @@ export const results: ModelResult[] = [
   { modelId: 'llama-4-maverick', benchmarkId: 'aa-omniscience', score: 24.3, date: '2026-05-14', verified: true },
   { modelId: 'deepseek-v3-2', benchmarkId: 'aa-omniscience', score: 24.2, date: '2026-05-14', verified: true },
   { modelId: 'gpt-oss-120b', benchmarkId: 'aa-omniscience', score: 21.5, date: '2026-05-14', verified: true },
+
+  // ========== AA Intelligence Index (补充缺失模型, 2026-05-15) ==========
+  { modelId: 'gpt-5', benchmarkId: 'aa-intelligence', score: 46, date: '2026-05-14', verified: true },
+  { modelId: 'deepseek-v3-2', benchmarkId: 'aa-intelligence', score: 38, date: '2026-05-14', verified: true },
+  { modelId: 'gpt-5-2-codex', benchmarkId: 'aa-intelligence', score: 49, date: '2026-05-14', verified: true },
+  { modelId: 'gemini-3-flash', benchmarkId: 'aa-intelligence', score: 48, date: '2026-05-14', verified: true },
+  { modelId: 'minimax-m2-5', benchmarkId: 'aa-intelligence', score: 43, date: '2026-05-14', verified: true },
+  { modelId: 'qwen3-coder-480b', benchmarkId: 'aa-intelligence', score: 35, date: '2026-05-14', verified: true },
+  { modelId: 'llama-4-maverick', benchmarkId: 'aa-intelligence', score: 18, date: '2026-05-14', verified: true },
+  { modelId: 'mistral-medium-3-5', benchmarkId: 'aa-intelligence', score: 35, date: '2026-05-14', verified: true },
+  { modelId: 'deepseek-v4-flash', benchmarkId: 'aa-intelligence', score: 47, date: '2026-05-14', verified: true },
+  { modelId: 'glm-5-turbo', benchmarkId: 'aa-intelligence', score: 40, date: '2026-05-14', verified: true },
+  { modelId: 'claude-sonnet-4-6', benchmarkId: 'aa-intelligence', score: 38, date: '2026-05-14', verified: true },
+  { modelId: 'gpt-5-3-codex', benchmarkId: 'aa-intelligence', score: 46, date: '2026-05-14', verified: true },
+  { modelId: 'kimi-k2-5', benchmarkId: 'aa-intelligence', score: 47, date: '2026-05-14', verified: true },
 ];
 
 export function getResultsByModel(modelId: string): ModelResult[] {

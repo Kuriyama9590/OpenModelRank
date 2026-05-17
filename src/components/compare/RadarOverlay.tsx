@@ -13,16 +13,12 @@ import {
 import { getModel } from '@/data/models';
 import { getBenchmark } from '@/data/benchmarks';
 import { getModelBenchmarkScores } from '@/lib/rankings';
-import type { BenchmarkCategory } from '@/types';
+import { RADAR_CATEGORIES, computeCategoryMaxScores } from '@/lib/radar';
 import { CATEGORY_NAMES } from '@/types';
 
 interface RadarOverlayProps {
   modelIds: string[];
 }
-
-const RADAR_CATEGORIES: BenchmarkCategory[] = [
-  'coding', 'math', 'science', 'knowledge', 'agent', 'speed', 'value', 'longcontext'
-];
 
 const MODEL_PALETTE = [
   '#6366f1',
@@ -37,7 +33,9 @@ const MODEL_PALETTE = [
 
 export function RadarOverlay({ modelIds }: RadarOverlayProps) {
   const chartData = useMemo(() => {
+    const maxScores = computeCategoryMaxScores();
     const categoryDataMap: Record<string, Record<string, number[]>> = {};
+
     for (const id of modelIds) {
       categoryDataMap[id] = {};
       const model = getModel(id);
@@ -47,26 +45,22 @@ export function RadarOverlay({ modelIds }: RadarOverlayProps) {
         const bm = getBenchmark(bmId);
         if (!bm) continue;
         if (!categoryDataMap[id][bm.category]) categoryDataMap[id][bm.category] = [];
-        const normalized = Math.min(100, Math.max(0, (bmScore.score / (bmScore.score + 50)) * 100));
-        categoryDataMap[id][bm.category].push(normalized);
+        categoryDataMap[id][bm.category].push(bmScore.score);
       }
-      // Speed
       if (model?.speedToks) {
-        categoryDataMap[id]['speed'] = [Math.min(100, (model.speedToks / 200) * 100)];
+        categoryDataMap[id]['speed'] = [model.speedToks];
       }
-      // Value
       if (model?.priceBlended && model.priceBlended > 0) {
         const aaScore = scores['aa-intelligence']?.score;
         if (aaScore) {
-          categoryDataMap[id]['value'] = [Math.min(100, (aaScore / model.priceBlended) * 5)];
+          categoryDataMap[id]['value'] = [aaScore / model.priceBlended];
         }
       }
-      // Long context
       const lcrScore = scores['aa-lcr']?.score;
       if (lcrScore !== undefined && lcrScore !== null) {
         categoryDataMap[id]['longcontext'] = [lcrScore];
       } else if (model && model.contextWindow > 0) {
-        categoryDataMap[id]['longcontext'] = [Math.min(100, (model.contextWindow / 1000000) * 100)];
+        categoryDataMap[id]['longcontext'] = [model.contextWindow / 10000];
       }
     }
 
@@ -75,18 +69,17 @@ export function RadarOverlay({ modelIds }: RadarOverlayProps) {
       const entry: Record<string, string | number> = {
         category: CATEGORY_NAMES[cat] || cat,
       };
-      let hasAny = false;
+      const max = maxScores[cat];
       for (const id of modelIds) {
         const scores = categoryDataMap[id]?.[cat];
-        if (scores && scores.length > 0) {
-          const avg = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
-          entry[id] = avg;
-          hasAny = true;
+        if (scores && scores.length > 0 && max > 0) {
+          const modelAvg = scores.reduce((a, b) => a + b, 0) / scores.length;
+          entry[id] = Math.round((modelAvg / max) * 100);
         } else {
           entry[id] = 0;
         }
       }
-      if (hasAny) result.push(entry);
+      result.push(entry);
     }
     return { data: result, models: modelIds.map((id) => getModel(id)).filter(Boolean) };
   }, [modelIds]);
