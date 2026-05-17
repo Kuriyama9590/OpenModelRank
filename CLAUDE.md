@@ -56,6 +56,10 @@ npx tsx scripts/check-rankings.ts  # 运行排名验证脚本
 - 同一模型同一 Benchmark 多条数据时取最高分
 - 新竞技场题目: 在 `src/data/arena-questions/` 对应类别文件中添加
 
+## 环境配置
+
+- Git 代理: `http.proxy` / `https.proxy` = `http://127.0.0.1:7890` (全局已配置)
+
 ## 禁止事项
 
 - 不要擅自修改 rankings.ts 中的类别权重，除非用户明确要求
